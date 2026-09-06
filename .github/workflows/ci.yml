@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_BUILD_JOBS: 1
+  CARGO_TARGET_DIR: target-parton
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+      - name: cargo check (parton)
+        run: cargo check -p parton
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+          components: clippy
+      - name: cargo clippy (parton)
+        run: cargo clippy -p parton --all-targets --all-features -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+      - name: cargo test (parton)
+        run: cargo test -p parton
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+      - name: cargo doc (deny warnings)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p parton --no-deps
+      - name: cargo test --doc
+        run: cargo test -p parton --doc
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check
+
+  # Coverage floor ≥64% (ratchet toward 90%).
+  # Ratchet toward 90% over time; fail PRs that regress below the floor.
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
+        with:
+          tool: cargo-llvm-cov
+      - name: Line coverage floor (≥64%)
+        # Floor tracks current llvm-cov after GrowFs / host-action surface landed; raise when
+        # unit coverage for those paths catches up (last green main had no coverage job).
+        run: cargo llvm-cov -p parton --fail-under-lines 64 --summary-only

@@ -1,0 +1,70 @@
+[workspace]
+resolver = "2"
+members = ["parton"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Sean O'Rourke"]
+repository = "https://github.com/unified-field-dev/parton"
+homepage = "https://github.com/unified-field-dev/parton"
+keywords = ["agent", "docker", "fleet", "heartbeat", "containers"]
+categories = ["asynchronous", "network-programming"]
+
+[workspace.dependencies]
+anyhow = "1"
+axum = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tempfile = "3"
+base64 = { version = "0.22", default-features = false, features = ["std"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+sysinfo = { version = "0.32", default-features = false, features = ["system", "disk"] }
+rand = "0.8"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+crypto_box = { version = "0.9", features = ["std", "seal"] }
+sha2 = { version = "0.10", default-features = false }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.18", default-features = false, features = ["http-listener"] }
+thiserror = "2"
+criterion = { version = "0.5", default-features = false }
+
+[workspace.lints.rust]
+missing_docs = "deny"
+unsafe_code = "forbid"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "deny"
+invalid_html_tags = "deny"
+invalid_codeblock_attributes = "deny"
+missing_crate_level_docs = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "allow", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+too_many_arguments = "deny"
+too_many_lines = "deny"
+cognitive_complexity = "deny"
+redundant_field_names = { level = "allow", priority = 1 }
+unnested_or_patterns = "deny"
+must_use_candidate = "allow"
+similar_names = "allow"
+module_name_repetitions = "allow"
+used_underscore_binding = "allow"
+type_complexity = "allow"
+items_after_statements = "allow"
+significant_drop_tightening = "allow"
