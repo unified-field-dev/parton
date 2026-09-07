@@ -5,18 +5,35 @@ for the lint policy these commands enforce.
 
 ## Environment
 
-All cargo commands use a single build job and a dedicated target dir so local verification
-doesn't collide with other workspaces on the same machine:
+Match [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) workflow `env`. Use a single
+build job and a dedicated target dir so local verification does not collide with other
+workspaces on the same machine:
 
 ```bash
 export CARGO_BUILD_JOBS=1
 export CARGO_TARGET_DIR=target-parton
+export RUSTFLAGS="-D warnings"
 ```
+
+Toolchain: stable (same as CI).
+
+## PR CI parity
+
+Required PR jobs in `ci.yml` and the local commands that match them:
+
+| CI job | Local command |
+|--------|----------------|
+| `fmt` | `cargo fmt --all --check` |
+| `check` | `cargo check -p parton` |
+| `clippy` | `cargo clippy -p parton --all-targets --all-features -- -D warnings` |
+| `test` | `cargo test -p parton` |
+| `docs` | `RUSTDOCFLAGS="-D warnings" cargo doc -p parton --no-deps` then `cargo test -p parton --doc` |
+| `deny` | `cargo deny check` |
+| `coverage` | `cargo llvm-cov -p parton --fail-under-lines 64 --summary-only` |
 
 ## Commands
 
-Run these in order; each must pass with no warnings. This is the same command block CI runs
-([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
+Run these in order; each must pass with no warnings (same block as PR CI):
 
 ```bash
 # Formatting
