@@ -253,6 +253,7 @@ fn parse_heartbeat_response_accepts_legacy_ok() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn send_heartbeat_sets_token_header_when_present() -> anyhow::Result<()> {
     let state = HeaderState {
         token: Arc::new(Mutex::new(None)),
