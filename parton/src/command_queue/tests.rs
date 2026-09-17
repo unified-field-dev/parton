@@ -106,7 +106,9 @@ async fn post_claim_action_sends_node_id_header() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn post_extend_action_lease_sends_node_id_header() -> anyhow::Result<()> {
+    clear_spiffe_auth_env();
     let state = CapturedHeaders::default();
     let app = Router::new()
         .route("/actions/extend-lease", post(extend_lease_handler))
@@ -121,11 +123,14 @@ async fn post_extend_action_lease_sends_node_id_header() -> anyhow::Result<()> {
 
     let _ = shutdown_tx.send(());
     let _ = handle.await;
+    clear_spiffe_auth_env();
     Ok(())
 }
 
 #[tokio::test]
+#[serial]
 async fn post_action_result_sends_node_id_header() -> anyhow::Result<()> {
+    clear_spiffe_auth_env();
     let state = CapturedHeaders::default();
     let app = Router::new()
         .route("/actions/result", post(result_handler))
@@ -154,6 +159,7 @@ async fn post_action_result_sends_node_id_header() -> anyhow::Result<()> {
 
     let _ = shutdown_tx.send(());
     let _ = handle.await;
+    clear_spiffe_auth_env();
     Ok(())
 }
 
