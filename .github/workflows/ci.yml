@@ -76,6 +76,18 @@ jobs:
         with:
           command: check
 
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master (pin); toolchain via input
+        with:
+          toolchain: stable
+      - name: Security audit
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
+
   # Coverage floor ≥64% (ratchet toward 90%).
   # Ratchet toward 90% over time; fail PRs that regress below the floor.
   coverage:
