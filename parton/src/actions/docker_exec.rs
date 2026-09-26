@@ -55,10 +55,7 @@ fn digest_hex_from_image_ref(image: &str) -> Option<String> {
     let lower = image.to_ascii_lowercase();
     let idx = lower.find("@sha256:")?;
     let rest = lower.get(idx + "@sha256:".len()..)?;
-    let hex: String = rest
-        .chars()
-        .take_while(char::is_ascii_hexdigit)
-        .collect();
+    let hex: String = rest.chars().take_while(char::is_ascii_hexdigit).collect();
     if hex.len() == 64 {
         Some(hex)
     } else {
@@ -127,8 +124,12 @@ fn try_load_image_tarball<R: DockerCommandRunner>(
             }),
         ));
     }
-    let stdout_r = String::from_utf8_lossy(&reinspect.stdout).trim().to_string();
-    let stderr_r = String::from_utf8_lossy(&reinspect.stderr).trim().to_string();
+    let stdout_r = String::from_utf8_lossy(&reinspect.stdout)
+        .trim()
+        .to_string();
+    let stderr_r = String::from_utf8_lossy(&reinspect.stderr)
+        .trim()
+        .to_string();
     anyhow::bail!(
         "docker load -i {path_s} succeeded but image `{image}` is still missing \
          (tarball tags may not match image_ref). load: {} | re-inspect: {}",

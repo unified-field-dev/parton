@@ -491,12 +491,10 @@ fn ensure_docker_image_loads_from_parton_image_tarball() {
         ]),
         args_log: RefCell::new(vec![]),
     };
-    let (mode, payload) = ensure_docker_image_with_runner("ghcr.io/acme/app:1", &runner).expect("ok");
+    let (mode, payload) =
+        ensure_docker_image_with_runner("ghcr.io/acme/app:1", &runner).expect("ok");
     assert_eq!(mode, "load");
-    assert_eq!(
-        payload["registry_image_preflight"].as_str(),
-        Some("load")
-    );
+    assert_eq!(payload["registry_image_preflight"].as_str(), Some("load"));
     let log = runner.args_log.borrow();
     assert_eq!(log[2][0], "load");
     assert_eq!(log[2][1], "-i");
@@ -538,7 +536,10 @@ fn ensure_docker_image_loads_from_digest_dir() {
     };
     let (mode, payload) = ensure_docker_image_with_runner(&image, &runner).expect("ok");
     assert_eq!(mode, "load");
-    assert_eq!(payload["tarball"].as_str(), Some(tar.to_str().expect("utf8")));
+    assert_eq!(
+        payload["tarball"].as_str(),
+        Some(tar.to_str().expect("utf8"))
+    );
     clear_image_tarball_env();
 }
 
