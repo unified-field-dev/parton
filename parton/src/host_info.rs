@@ -117,7 +117,7 @@ mod tests {
             "expected at least one mounted filesystem to be reported"
         );
         for mount in &info.mounts {
-            assert!(!mount.mount_point.is_empty());
+            assert_ne!(mount.mount_point, "");
             assert!(mount.total_bytes >= mount.available_bytes);
             assert_eq!(mount.total_gb, mount.total_bytes / 1024 / 1024 / 1024);
             assert_eq!(

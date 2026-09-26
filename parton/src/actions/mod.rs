@@ -276,8 +276,7 @@ pub fn execute_container_action<E: ContainerActionExecutor>(
         let image_ref = request
             .image_ref
             .as_ref()
-            .map(|value| value.trim())
-            .unwrap_or_default();
+            .map_or_default(|value| value.trim());
         if image_ref.is_empty() {
             anyhow::bail!("image_ref is required for deploy");
         }

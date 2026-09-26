@@ -257,7 +257,7 @@ async fn post_claim_action_fails_before_http_when_spiffe_without_jwt() -> anyhow
     let err = post_claim_action(&base, "node-xyz", None, None)
         .await
         .expect_err("spiffe without jwt");
-    assert!(!err.to_string().is_empty());
+    assert_ne!(err.to_string(), "");
     assert!(
         state.node_id.lock().expect("lock").is_none(),
         "server must not see the request"

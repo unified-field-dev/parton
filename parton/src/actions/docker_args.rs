@@ -164,8 +164,7 @@ fn deploy_docker_args(
         request
             .image_ref
             .as_ref()
-            .map(|value| value.trim().to_string())
-            .unwrap_or_default(),
+            .map_or_default(|value| value.trim().to_string()),
     );
     for arg in deploy_command_strings(request)? {
         args.push(arg);

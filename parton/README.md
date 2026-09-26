@@ -94,12 +94,15 @@ cargo run -p parton
 | `PARTON_HANDOFF_IMPORT_BASE_URL` | _(unset)_ | Optional import base URL for handoff results |
 | `PARTON_DIRECTIVE_GRACE_SECS` | `300` | Post re-enroll grace window |
 | `PARTON_AUTHORITY_VERIFY_KEY` | _(unset)_ | Ed25519 verify key for handoff directives (required for signed handoffs) |
+| `PARTON_IMAGE_TARBALL` | _(unset)_ | After inspect miss + pull failure, `docker load -i` this file then re-inspect |
+| `PARTON_IMAGE_TARBALL_DIR` | _(unset)_ | Same fallback: load `{dir}/{sha256}.tar` or `.tar.gz` when `image_ref` is digest-pinned |
 
 ## Security
 
 Deploy policy defaults to deny host networking/mounts and require digest-pinned images.
 Optional cosign (`PARTON_COSIGN_MODE`) and SPIFFE (`PARTON_AUTH_MODE`) are implemented —
-vulnerability reporting: [`../SECURITY.md`](../SECURITY.md).
+vulnerability reporting: [`../SECURITY.md`](../SECURITY.md). Air-gapped tarballs are
+operator-supplied files on the agent host (same trust as a manual `docker load`).
 
 ## Docs
 

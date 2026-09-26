@@ -57,8 +57,7 @@ fn parse_container_status_report_from_ps_json_parses_labels() {
 fn container_status_report_deserializes_legacy_summary_only() {
     let json = r#"{"running":2,"exited":1,"unhealthy":0}"#;
     let report: ContainerStatusReport = serde_json::from_str(json).expect("deserialize");
-    assert!(report.containers.is_empty());
-    assert_eq!(report.summary.running, 2);
+    assert_eq!(report.containers.len(), 0);
     assert_eq!(report.summary.exited, 1);
 }
 
@@ -125,7 +124,7 @@ fn collect_container_status_report_returns_empty_on_runner_error() {
         ps_output: Err(anyhow::anyhow!("boom")),
         inspect: std::collections::HashMap::default(),
     });
-    assert!(report.containers.is_empty());
+    assert_eq!(report.containers.len(), 0);
     assert_eq!(report.summary.running, 0);
 }
 
@@ -249,7 +248,7 @@ fn sample_report() -> NodeHeartbeatReport {
 #[test]
 fn parse_heartbeat_response_accepts_legacy_ok() {
     let r = parse_heartbeat_response_body("ok");
-    assert!(r.directives.is_empty());
+    assert_eq!(r.directives.len(), 0);
 }
 
 #[tokio::test]

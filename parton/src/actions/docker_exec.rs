@@ -36,7 +36,108 @@ impl DockerCommandRunner for SystemDockerCommandRunner {
 /// [`ContainerActionExecutor`] backed by the local Docker CLI (`docker …` via `std::process`).
 pub struct DockerCliActionExecutor;
 
-/// `docker image inspect` then `docker pull` until the image is present, or return an actionable error.
+/// Env: single tarball for `docker load -i` after inspect miss + pull failure.
+const ENV_IMAGE_TARBALL: &str = "PARTON_IMAGE_TARBALL";
+/// Env: directory of `{sha256}.tar` / `{sha256}.tar.gz` for digest-pinned refs.
+const ENV_IMAGE_TARBALL_DIR: &str = "PARTON_IMAGE_TARBALL_DIR";
+
+fn join_docker_streams(stdout: &str, stderr: &str) -> String {
+    match (stdout.is_empty(), stderr.is_empty()) {
+        (true, true) => String::new(),
+        (false, true) => stdout.to_string(),
+        (true, false) => stderr.to_string(),
+        (false, false) => format!("{stdout} | {stderr}"),
+    }
+}
+
+/// Extract 64-char lowercase hex after `@sha256:` when present.
+fn digest_hex_from_image_ref(image: &str) -> Option<String> {
+    let lower = image.to_ascii_lowercase();
+    let idx = lower.find("@sha256:")?;
+    let rest = lower.get(idx + "@sha256:".len()..)?;
+    let hex: String = rest
+        .chars()
+        .take_while(char::is_ascii_hexdigit)
+        .collect();
+    if hex.len() == 64 {
+        Some(hex)
+    } else {
+        None
+    }
+}
+
+/// Resolve an on-disk tarball for air-gapped `docker load`.
+///
+/// Order: [`ENV_IMAGE_TARBALL`] (file) then [`ENV_IMAGE_TARBALL_DIR`] / `{digest}.tar[.gz]`.
+pub(super) fn resolve_image_tarball_path(image: &str) -> Option<std::path::PathBuf> {
+    if let Ok(raw) = std::env::var(ENV_IMAGE_TARBALL) {
+        let trimmed = raw.trim();
+        if !trimmed.is_empty() {
+            let path = std::path::PathBuf::from(trimmed);
+            if path.is_file() {
+                return Some(path);
+            }
+        }
+    }
+    let Ok(dir_raw) = std::env::var(ENV_IMAGE_TARBALL_DIR) else {
+        return None;
+    };
+    let dir = dir_raw.trim();
+    if dir.is_empty() {
+        return None;
+    }
+    let hex = digest_hex_from_image_ref(image)?;
+    let base = std::path::Path::new(dir);
+    for name in [format!("{hex}.tar"), format!("{hex}.tar.gz")] {
+        let candidate = base.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+fn try_load_image_tarball<R: DockerCommandRunner>(
+    image: &str,
+    tarball: &std::path::Path,
+    runner: &R,
+) -> anyhow::Result<(&'static str, serde_json::Value)> {
+    let path_s = tarball.display().to_string();
+    let load = runner.run(&["load".to_string(), "-i".to_string(), path_s.clone()])?;
+    let stdout_l = String::from_utf8_lossy(&load.stdout).trim().to_string();
+    let stderr_l = String::from_utf8_lossy(&load.stderr).trim().to_string();
+    if !load.status.success() {
+        anyhow::bail!(
+            "docker load -i {path_s} failed for image `{image}`: {}",
+            join_docker_streams(&stdout_l, &stderr_l)
+        );
+    }
+    let reinspect = runner.run(&[
+        "image".to_string(),
+        "inspect".to_string(),
+        image.to_string(),
+    ])?;
+    if reinspect.status.success() {
+        return Ok((
+            "load",
+            serde_json::json!({
+                "image_ref": image,
+                "registry_image_preflight": "load",
+                "tarball": path_s,
+            }),
+        ));
+    }
+    let stdout_r = String::from_utf8_lossy(&reinspect.stdout).trim().to_string();
+    let stderr_r = String::from_utf8_lossy(&reinspect.stderr).trim().to_string();
+    anyhow::bail!(
+        "docker load -i {path_s} succeeded but image `{image}` is still missing \
+         (tarball tags may not match image_ref). load: {} | re-inspect: {}",
+        join_docker_streams(&stdout_l, &stderr_l),
+        join_docker_streams(&stdout_r, &stderr_r)
+    );
+}
+
+/// `docker image inspect`, then `docker pull`, then optional air-gapped `docker load`.
 pub(super) fn ensure_docker_image_with_runner<R: DockerCommandRunner>(
     image: &str,
     runner: &R,
@@ -69,24 +170,20 @@ pub(super) fn ensure_docker_image_with_runner<R: DockerCommandRunner>(
             }),
         ));
     }
+    if let Some(tarball) = resolve_image_tarball_path(image) {
+        return try_load_image_tarball(image, &tarball, runner);
+    }
     let stdout_i = String::from_utf8_lossy(&inspect.stdout).trim().to_string();
     let stderr_i = String::from_utf8_lossy(&inspect.stderr).trim().to_string();
     let stdout_p = String::from_utf8_lossy(&pull.stdout).trim().to_string();
     let stderr_p = String::from_utf8_lossy(&pull.stderr).trim().to_string();
     anyhow::bail!(
         "selected host cannot use registry runtime image `{image}` (not cached and pull failed). \
-         Preload or mirror this image on the agent host, point `PARTON_REGISTRY_IMAGE_REF` at a reachable registry, \
-         or use a future air-gapped tarball path. inspect: {stdout_i}{sep_i}{stderr_i} | pull: {stdout_p}{sep_p}{stderr_p}",
-        sep_i = if !stdout_i.is_empty() && !stderr_i.is_empty() {
-            " | "
-        } else {
-            ""
-        },
-        sep_p = if !stdout_p.is_empty() && !stderr_p.is_empty() {
-            " | "
-        } else {
-            ""
-        },
+         Preload or mirror this image on the agent host, set `PARTON_IMAGE_TARBALL` / \
+         `PARTON_IMAGE_TARBALL_DIR` for `docker load`, or point `PARTON_REGISTRY_IMAGE_REF` at a \
+         reachable registry. inspect: {} | pull: {}",
+        join_docker_streams(&stdout_i, &stderr_i),
+        join_docker_streams(&stdout_p, &stderr_p),
     );
 }
 

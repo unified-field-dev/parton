@@ -78,18 +78,51 @@ pub(crate) struct ProcessGrowFsRunner;
 
 impl GrowFsCommandRunner for ProcessGrowFsRunner {
     fn run(&self, program: &str, args: &[&str]) -> anyhow::Result<CommandOutput> {
-        let output = Command::new(program)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()
-            .map_err(|e| anyhow::anyhow!("failed to spawn {program}: {e}"))?;
+        // growpart / resize2fs / xfs_growfs need root; AgentHost systemd runs as root,
+        // but lab/user installs may not — prefer passwordless sudo over failing open().
+        let needs_priv = matches!(program, "growpart" | "resize2fs" | "xfs_growfs");
+        let use_sudo = needs_priv && !running_as_root();
+        let output = if use_sudo {
+            let mut cmd = Command::new("sudo");
+            cmd.arg("-n").arg(program).args(args);
+            cmd.stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .map_err(|e| anyhow::anyhow!("failed to spawn sudo -n {program}: {e}"))?
+        } else {
+            Command::new(program)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .map_err(|e| anyhow::anyhow!("failed to spawn {program}: {e}"))?
+        };
         Ok(CommandOutput {
             status_success: output.status.success(),
             stdout: String::from_utf8_lossy(&output.stdout).trim().to_string(),
             stderr: String::from_utf8_lossy(&output.stderr).trim().to_string(),
         })
+    }
+}
+
+fn running_as_root() -> bool {
+    #[cfg(unix)]
+    {
+        std::fs::read_to_string("/proc/self/status")
+            .ok()
+            .and_then(|s| {
+                s.lines()
+                    .find(|l| l.starts_with("Uid:"))
+                    .and_then(|l| l.split_whitespace().nth(1))
+                    .and_then(|u| u.parse::<u32>().ok())
+            })
+            == Some(0)
+    }
+    #[cfg(not(unix))]
+    {
+        false
     }
 }
 

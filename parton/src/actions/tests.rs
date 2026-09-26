@@ -2,7 +2,8 @@ use super::diagnostic::run_diagnostic;
 use super::docker_args::docker_args_for_action;
 use super::docker_exec::{
     ensure_docker_image_with_runner, general_action_payload, normalize_docker_id,
-    redact_env_var_values, run_docker_command_with_runner, DockerCommandRunner,
+    redact_env_var_values, resolve_image_tarball_path, run_docker_command_with_runner,
+    DockerCommandRunner,
 };
 use super::wireguard::{
     validate_wireguard_peer_spec, wireguard_peer_response_with_runner, WgCommandRunner,
@@ -19,6 +20,11 @@ fn clear_docker_policy_env() {
     std::env::remove_var("PARTON_ALLOW_HOST_MOUNTS");
     std::env::remove_var("PARTON_REQUIRE_IMAGE_DIGEST");
     std::env::remove_var("PARTON_ALLOW_MUTABLE_TAGS");
+}
+
+fn clear_image_tarball_env() {
+    std::env::remove_var("PARTON_IMAGE_TARBALL");
+    std::env::remove_var("PARTON_IMAGE_TARBALL_DIR");
 }
 
 fn clear_cosign_env() {
@@ -425,6 +431,175 @@ fn ensure_docker_image_pull_after_inspect_miss() {
     let (mode, _) = ensure_docker_image_with_runner("registry:3", &runner).expect("ok");
     assert_eq!(mode, "pull");
     assert_eq!(runner.phase.get(), 2);
+}
+
+#[test]
+#[serial]
+fn ensure_docker_image_pull_fail_without_tarball_mentions_env() {
+    clear_image_tarball_env();
+    use std::cell::Cell;
+    struct AlwaysMiss {
+        calls: Cell<usize>,
+    }
+    impl DockerCommandRunner for AlwaysMiss {
+        fn run(&self, _args: &[String]) -> anyhow::Result<Output> {
+            self.calls.set(self.calls.get() + 1);
+            Ok(output(1, "", "miss"))
+        }
+    }
+    let runner = AlwaysMiss {
+        calls: Cell::new(0),
+    };
+    let err = ensure_docker_image_with_runner("registry:3", &runner).expect_err("bail");
+    let msg = err.to_string();
+    assert!(msg.contains("PARTON_IMAGE_TARBALL"), "{msg}");
+    assert!(!msg.contains("future air-gapped"), "{msg}");
+    assert_eq!(runner.calls.get(), 2); // inspect + pull only
+    clear_image_tarball_env();
+}
+
+#[test]
+#[serial]
+fn ensure_docker_image_loads_from_parton_image_tarball() {
+    clear_image_tarball_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let tar = dir.path().join("image.tar");
+    std::fs::write(&tar, b"fake-tar").expect("write tar");
+    std::env::set_var("PARTON_IMAGE_TARBALL", tar.to_str().expect("utf8"));
+
+    use std::cell::RefCell;
+    struct Seq {
+        outputs: RefCell<Vec<Output>>,
+        args_log: RefCell<Vec<Vec<String>>>,
+    }
+    impl DockerCommandRunner for Seq {
+        fn run(&self, args: &[String]) -> anyhow::Result<Output> {
+            self.args_log.borrow_mut().push(args.to_vec());
+            let mut outs = self.outputs.borrow_mut();
+            if outs.is_empty() {
+                anyhow::bail!("unexpected extra docker call: {args:?}");
+            }
+            Ok(outs.remove(0))
+        }
+    }
+    let runner = Seq {
+        outputs: RefCell::new(vec![
+            output(1, "", "No such image"), // inspect
+            output(1, "", "pull failed"),   // pull
+            output(0, "Loaded image", ""),  // load
+            output(0, "[{}]", ""),          // re-inspect
+        ]),
+        args_log: RefCell::new(vec![]),
+    };
+    let (mode, payload) = ensure_docker_image_with_runner("ghcr.io/acme/app:1", &runner).expect("ok");
+    assert_eq!(mode, "load");
+    assert_eq!(
+        payload["registry_image_preflight"].as_str(),
+        Some("load")
+    );
+    let log = runner.args_log.borrow();
+    assert_eq!(log[2][0], "load");
+    assert_eq!(log[2][1], "-i");
+    assert_eq!(log[2][2], tar.to_str().expect("utf8"));
+    clear_image_tarball_env();
+}
+
+#[test]
+#[serial]
+fn ensure_docker_image_loads_from_digest_dir() {
+    clear_image_tarball_env();
+    let hex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    let dir = tempfile::tempdir().expect("tempdir");
+    let tar = dir.path().join(format!("{hex}.tar"));
+    std::fs::write(&tar, b"fake-tar").expect("write tar");
+    std::env::set_var(
+        "PARTON_IMAGE_TARBALL_DIR",
+        dir.path().to_str().expect("utf8"),
+    );
+
+    use std::cell::RefCell;
+    struct Seq {
+        outputs: RefCell<Vec<Output>>,
+    }
+    impl DockerCommandRunner for Seq {
+        fn run(&self, _args: &[String]) -> anyhow::Result<Output> {
+            let mut outs = self.outputs.borrow_mut();
+            Ok(outs.remove(0))
+        }
+    }
+    let image = format!("ghcr.io/acme/app@sha256:{hex}");
+    let runner = Seq {
+        outputs: RefCell::new(vec![
+            output(1, "", "No such image"),
+            output(1, "", "pull failed"),
+            output(0, "Loaded image", ""),
+            output(0, "[{}]", ""),
+        ]),
+    };
+    let (mode, payload) = ensure_docker_image_with_runner(&image, &runner).expect("ok");
+    assert_eq!(mode, "load");
+    assert_eq!(payload["tarball"].as_str(), Some(tar.to_str().expect("utf8")));
+    clear_image_tarball_env();
+}
+
+#[test]
+#[serial]
+fn ensure_docker_image_load_ok_but_reinspect_miss_errors() {
+    clear_image_tarball_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let tar = dir.path().join("image.tar");
+    std::fs::write(&tar, b"fake-tar").expect("write tar");
+    std::env::set_var("PARTON_IMAGE_TARBALL", tar.to_str().expect("utf8"));
+
+    use std::cell::RefCell;
+    struct Seq {
+        outputs: RefCell<Vec<Output>>,
+    }
+    impl DockerCommandRunner for Seq {
+        fn run(&self, _args: &[String]) -> anyhow::Result<Output> {
+            let mut outs = self.outputs.borrow_mut();
+            Ok(outs.remove(0))
+        }
+    }
+    let runner = Seq {
+        outputs: RefCell::new(vec![
+            output(1, "", "No such image"),
+            output(1, "", "pull failed"),
+            output(0, "Loaded image: other:tag", ""),
+            output(1, "", "No such image"),
+        ]),
+    };
+    let err = ensure_docker_image_with_runner("wanted:tag", &runner).expect_err("mismatch");
+    let msg = err.to_string();
+    assert!(msg.contains("still missing"), "{msg}");
+    assert!(msg.contains("tarball tags may not match"), "{msg}");
+    clear_image_tarball_env();
+}
+
+#[test]
+#[serial]
+fn ensure_docker_image_missing_tarball_path_skips_load() {
+    clear_image_tarball_env();
+    std::env::set_var("PARTON_IMAGE_TARBALL", "/nonexistent/parton-image.tar");
+    assert!(resolve_image_tarball_path("registry:3").is_none());
+
+    use std::cell::Cell;
+    struct AlwaysMiss {
+        calls: Cell<usize>,
+    }
+    impl DockerCommandRunner for AlwaysMiss {
+        fn run(&self, args: &[String]) -> anyhow::Result<Output> {
+            assert_ne!(args.first().map(String::as_str), Some("load"));
+            self.calls.set(self.calls.get() + 1);
+            Ok(output(1, "", "miss"))
+        }
+    }
+    let runner = AlwaysMiss {
+        calls: Cell::new(0),
+    };
+    let _ = ensure_docker_image_with_runner("registry:3", &runner).expect_err("bail");
+    assert_eq!(runner.calls.get(), 2);
+    clear_image_tarball_env();
 }
 
 #[test]

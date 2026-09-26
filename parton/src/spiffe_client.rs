@@ -260,7 +260,7 @@ mod tests {
         let client = reqwest::Client::new();
         let builder = client.get("http://127.0.0.1:9/");
         let err = apply_agent_auth_headers(builder, None).expect_err("no jwt");
-        assert!(!err.to_string().is_empty());
+        assert_ne!(err.to_string(), "");
         clear();
     }
 }
