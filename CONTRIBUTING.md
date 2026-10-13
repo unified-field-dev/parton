@@ -117,7 +117,9 @@ cargo llvm-cov -p parton --fail-under-lines 64 --summary-only
 
 ## Verification
 
-See [`docs/VERIFICATION.md`](docs/VERIFICATION.md) for the full command block and
+See [`docs/VERIFICATION.md`](docs/VERIFICATION.md) for the full command block and the
+table mapping each CI job to its local command. Every command must pass with no
+warnings before you open a PR.
 
 ## Security (contributors)
 

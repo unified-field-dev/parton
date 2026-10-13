@@ -271,8 +271,8 @@
 //! 3. Branch on [`agent_runtime::HeartbeatStepOutcome`] (`Continue`, grace expiry, revoke).
 //!
 //! Failures: missing `PARTON_NODE_ID`, report build errors, and directive-apply errors.
-//! Transport failures usually return `Continue` (or grace fallback). Next: operator
-//! see repository `SECURITY.md` for vulnerability reporting.
+//! Transport failures usually return `Continue` (or grace fallback). Next: the
+//! [Security](#security) section below covers deploy policy and vulnerability reporting.
 //!
 //! ```no_run
 //! use parton::agent_runtime::{

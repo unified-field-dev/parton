@@ -77,8 +77,7 @@ cargo test -p parton
 cargo deny check
 ```
 
-Full command block: [`VERIFICATION.md`](VERIFICATION.md) (details in
-[`docs/VERIFICATION.md`](docs/VERIFICATION.md)). Contribute:
+Full command block: [`docs/VERIFICATION.md`](docs/VERIFICATION.md). Contribute:
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## FAQ

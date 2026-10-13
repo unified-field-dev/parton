@@ -111,6 +111,6 @@ export CARGO_BUILD_JOBS=1 CARGO_TARGET_DIR=target-parton
 RUSTDOCFLAGS="-D warnings" cargo doc -p parton --no-deps
 ```
 
-See the [root README](../README.md) for verification, and
-See crate docs and [`../docs/spiffe.md`](../docs/spiffe.md) for auth modes.
+See the [root README](../README.md) for verification, and the crate docs plus
+[`../docs/spiffe.md`](../docs/spiffe.md) for auth modes.
 
