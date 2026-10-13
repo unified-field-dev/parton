@@ -5,17 +5,19 @@ for the lint policy these commands enforce.
 
 ## Environment
 
-Match [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) workflow `env`. Use a single
-build job and a dedicated target dir so local verification does not collide with other
-workspaces on the same machine:
+CI builds with warnings denied on the stable toolchain
+([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)). Match that locally:
 
 ```bash
-export CARGO_BUILD_JOBS=1
-export CARGO_TARGET_DIR=target-parton
 export RUSTFLAGS="-D warnings"
 ```
 
-Toolchain: stable (same as CI).
+The `deny`, `audit`, and `coverage` jobs need extra tools:
+
+```bash
+cargo install cargo-deny cargo-audit cargo-llvm-cov --locked
+rustup component add llvm-tools-preview
+```
 
 ## PR CI parity
 
@@ -29,6 +31,7 @@ Required PR jobs in `ci.yml` and the local commands that match them:
 | `test` | `cargo test -p parton` |
 | `docs` | `RUSTDOCFLAGS="-D warnings" cargo doc -p parton --no-deps` then `cargo test -p parton --doc` |
 | `deny` | `cargo deny check` |
+| `audit` | `cargo audit` |
 | `coverage` | `cargo llvm-cov -p parton --fail-under-lines 64 --summary-only` |
 
 ## Commands
@@ -56,6 +59,9 @@ cargo test -p parton --doc
 
 # Dependency policy (advisories, licenses, sources) — see docs/supply-chain.md
 cargo deny check
+
+# RustSec advisory scan (second check beside cargo-deny)
+cargo audit
 
 # Coverage floor (ratchet toward 90%)
 cargo llvm-cov -p parton --fail-under-lines 64 --summary-only

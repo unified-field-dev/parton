@@ -11,6 +11,8 @@ The `deny` job in CI runs `cargo deny check` on every push and pull request to `
 - Allowed license set
 - Allowed crate sources (crates.io only; no unknown registries or Git remotes)
 
+The `audit` job runs `cargo audit` against the RustSec database as a second advisory check.
+
 ## Rules
 
 1. **Prefer crates.io** for all dependencies.

@@ -1,7 +1,7 @@
 # Contributing to parton
 
-`parton` is the node agent for Unified Field control-plane hosts (Pion). It ships
-a library (`parton`) plus the `parton` binary that runs the heartbeat + action loop.
+`parton` is a node agent for cell control planes. It ships a library (`parton`)
+plus the `parton` binary that runs the heartbeat and action loop.
 
 ## Documentation
 
@@ -29,7 +29,7 @@ Workspace lints live in the root [`Cargo.toml`](Cargo.toml) (`[workspace.lints.*
 Library and binary crates inherit them via `[lints] workspace = true`. CI runs:
 
 ```bash
-CARGO_BUILD_JOBS=1 cargo clippy -p parton --all-targets --all-features -- -D warnings
+cargo clippy -p parton --all-targets --all-features -- -D warnings
 ```
 
 ### Enforced (restriction / correctness)
@@ -41,6 +41,7 @@ CARGO_BUILD_JOBS=1 cargo clippy -p parton --all-targets --all-features -- -D war
 | `clippy::print_stdout` / `print_stderr` | deny | Prefer `tracing` in library/binary paths |
 | `clippy::todo` / `unimplemented` | deny | No placeholders in shipped code |
 | `clippy::too_many_arguments` | deny | Group related args (canonical wire structs may `#[allow]` with a reason) |
+| `clippy::too_many_lines` / `cognitive_complexity` | deny | Extract helpers instead of growing functions |
 | `clippy::unnested_or_patterns` | deny | Collapse `A | B` patterns |
 | `rust.missing_docs` | deny | Public API docs |
 | `rust.unsafe_code` | forbid | No `unsafe` |
@@ -51,8 +52,8 @@ CARGO_BUILD_JOBS=1 cargo clippy -p parton --all-targets --all-features -- -D war
 | `rustdoc::missing_crate_level_docs` | deny | Crate-level `//!` required |
 
 Pedantic is enabled at warn (CI denies via `-D warnings`); nursery is allowed.
-`too_many_lines` / `cognitive_complexity` are warn — prefer extracting helpers; only
-`#[allow(...)]` with a one-line reason when a refactor would risk behavior change.
+Prefer extracting helpers over `#[allow(...)]` on the denied lints; use `#[allow(...)]`
+with a one-line reason only when a refactor would risk behavior change.
 
 ### Logging
 
@@ -91,8 +92,8 @@ Clippy denies `too_many_lines` (≤120), `too_many_arguments` (≤7), and `cogni
 
 ### Supply chain
 
-Use **cargo-deny** (`deny.toml` + CI `deny` job) for advisories/licenses/sources — this satisfies
-the RustSec advisory gate (no separate `cargo-audit` job). See
+CI runs **cargo-deny** (`deny.toml`, `deny` job) for advisories, licenses, and sources, and
+a separate **cargo-audit** job (`audit`) as a second RustSec check. See
 [`docs/supply-chain.md`](docs/supply-chain.md).
 
 ### Coverage & benches
@@ -105,13 +106,12 @@ the RustSec advisory gate (no separate `cargo-audit` job). See
 CI runs on every push and PR ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
 ```bash
-export CARGO_BUILD_JOBS=1
-export CARGO_TARGET_DIR=target-parton
 cargo fmt --all --check
 cargo check -p parton
 cargo clippy -p parton --all-targets --all-features -- -D warnings
 cargo test -p parton
 cargo deny check
+cargo audit
 cargo llvm-cov -p parton --fail-under-lines 64 --summary-only
 ```
 
@@ -125,5 +125,3 @@ warnings before you open a PR.
 
 Follow [`SECURITY.md`](SECURITY.md) for vulnerability reporting when changing auth,
 enrollment, deploy policy, or agent HTTP surfaces. SPIFFE guide: [`docs/spiffe.md`](docs/spiffe.md).
-
-Coverage floor is **64%** lines (ratchet toward 90%).
