@@ -1,8 +1,8 @@
-//! Canonical signing payloads for control-plane handoff directives (shared with Pion ingest).
+//! Canonical signing payloads for control-plane handoff directives (shared with the control plane ingest).
 
 use chrono::{DateTime, SecondsFormat, Utc};
 
-/// Deterministic UTF-8 message signed by the CP authority for [`crate::AgentDirective::ReEnroll`].
+/// Deterministic UTF-8 message signed by the control plane authority for [`crate::AgentDirective::ReEnroll`].
 // Args mirror the canonical wire fields 1:1; grouping into a struct would obscure the signed layout.
 #[allow(clippy::too_many_arguments)]
 #[must_use]

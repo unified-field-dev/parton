@@ -9,7 +9,8 @@
 //! 2. `PARTON_SPIFFE_JWT_PATH` — file contents
 //! 3. `spire-agent api fetch jwt` against `SPIFFE_ENDPOINT_SOCKET`
 //!
-//! Rollout guide: repository `docs/spiffe.md`. Vulnerability reporting: `SECURITY.md`.
+//! Rollout guide: [`docs/spiffe.md`](https://github.com/unified-field-dev/parton/blob/main/docs/spiffe.md). Vulnerability reporting:
+//! [`SECURITY.md`](https://github.com/unified-field-dev/parton/blob/main/SECURITY.md).
 
 use std::process::Command;
 

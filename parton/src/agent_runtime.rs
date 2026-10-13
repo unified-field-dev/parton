@@ -30,14 +30,15 @@ pub struct AgentRuntimeConfig {
     pub action_lease_secs: u64,
     /// Lease extension in seconds before long actions (`PARTON_ACTION_LEASE_EXTEND_SECS`).
     pub action_lease_extend_secs: u64,
-    /// Seconds to keep retrying the new CP before exiting (re-enroll grace window).
+    /// Seconds to keep retrying the new control plane before exiting (re-enroll grace window).
     pub grace_window_secs: u64,
 }
 
 impl AgentRuntimeConfig {
     /// Build a config from process environment variables.
     ///
-    /// Missing optional variables fall back to the documented defaults (see the crate README).
+    /// Missing optional variables fall back to the documented defaults (see the
+    /// [crate README](https://github.com/unified-field-dev/parton/blob/main/parton/README.md)).
     /// `PARTON_NODE_ID` is required: blank/unset fails closed so the agent never invents an
     /// identity that could collide with another node.
     ///
@@ -96,15 +97,15 @@ impl AgentRuntimeConfig {
     }
 }
 
-/// After a successful re-enroll apply, retry the new CP until `deadline`; on failure, one fallback
-/// heartbeat to the previous CP with `apply_failed` until grace expires.
+/// After a successful re-enroll apply, retry the new control plane until `deadline`; on failure, one fallback
+/// heartbeat to the previous control plane with `apply_failed` until grace expires.
 #[derive(Debug, Clone)]
 pub struct PendingReenrollGrace {
-    /// Previous CP heartbeat URL to fall back to while the grace window is open.
+    /// Previous control plane heartbeat URL to fall back to while the grace window is open.
     pub prev_endpoint: String,
-    /// Previous CP token snapshot captured before the `parton.env` rewrite.
+    /// Previous control plane token snapshot captured before the `parton.env` rewrite.
     pub prev_token: Option<String>,
-    /// Instant after which the agent stops retrying the new CP and exits non-zero.
+    /// Instant after which the agent stops retrying the new control plane and exits non-zero.
     pub deadline: DateTime<Utc>,
 }
 
@@ -113,7 +114,7 @@ pub struct PendingReenrollGrace {
 pub enum HeartbeatStepOutcome {
     /// Heartbeat handled; the loop should continue to the next iteration.
     Continue,
-    /// Grace window elapsed while the new CP still rejects heartbeats.
+    /// Grace window elapsed while the new control plane still rejects heartbeats.
     ExitGraceExpired,
     /// A verified `Revoke` directive was applied.
     ExitRevoked,
@@ -153,7 +154,7 @@ pub async fn run_heartbeat_step(
         Ok(response) => {
             // A successful send means the control plane has already recorded this node (or just
             // enrolled it via this report's token); no need to keep resending the enrollment
-            // token on every subsequent beat (F11).
+            // token on every subsequent beat.
             *enrollment_acknowledged = true;
             if pending_grace.is_some() {
                 *pending_grace = None;
@@ -171,7 +172,7 @@ pub async fn run_heartbeat_step(
     }
 }
 
-/// Handle a failed heartbeat send: within the grace window, fall back to the previous CP;
+/// Handle a failed heartbeat send: within the grace window, fall back to the previous control plane;
 /// once the deadline passes, signal exit.
 async fn handle_heartbeat_error(
     report: &crate::NodeHeartbeatReport,
@@ -237,8 +238,8 @@ fn process_successful_heartbeat(
         config.token = fresh.token;
         config.node_id = fresh.node_id;
         config.cell_id = fresh.cell_id;
-        // Re-enroll rewrites `parton.env` with a fresh PARTON_ENROLLMENT_TOKEN for the new CP,
-        // which hasn't seen this node yet — resume sending it until that CP acknowledges.
+        // Re-enroll rewrites `parton.env` with a fresh PARTON_ENROLLMENT_TOKEN for the new control plane,
+        // which hasn't seen this node yet — resume sending it until that control plane acknowledges.
         *enrollment_acknowledged = false;
     }
     Ok(HeartbeatStepOutcome::Continue)
@@ -354,7 +355,7 @@ mod tests {
         Json(HeartbeatResponse::default())
     }
 
-    /// F11: the enrollment token is only sent on the first (unacknowledged) heartbeat; once a
+    /// The enrollment token is only sent on the first (unacknowledged) heartbeat; once a
     /// heartbeat has been accepted, subsequent beats must not resend the long-lived token.
     #[tokio::test]
     #[serial_test::serial]

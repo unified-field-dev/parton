@@ -3,8 +3,8 @@
 //! Builds fixed `docker` argv vectors from [`TemplatedExecId`](crate::TemplatedExecId) and runs
 //! them inside the target container. Promote paths treat not-in-recovery and already-master as
 //! idempotent success. Redis coverage includes `REPLICAOF` follow, cluster meet / replicate /
-//! slot assign / migrate, and slot-key `MIGRATE`. Postgres lab copy uses
-//! [`TemplatedExecId::PgShardBulkCopy`] on `nucleus_rebalance_lab`; `ClickHouse` lab copy uses
+//! slot assign / migrate, and slot-key `MIGRATE`. Postgres shard copy uses
+//! [`TemplatedExecId::PgShardBulkCopy`] on `nucleus_rebalance_lab`; `ClickHouse` shard copy uses
 //! [`TemplatedExecId::ChShardBulkCopy`] on `default.nucleus_rebalance_lab`. `MongoDB` replica-set
 //! and sharded templates run `mongosh --eval` scripts. `ClickHouse` distributed / Keeper quorum
 //! templates apply remote-server and quorum configuration inside the container.
@@ -103,7 +103,7 @@
 //! let _ = copy;
 //! ```
 //!
-//! Lab `ClickHouse` shard bulk copy to a peer (rebalance Moving tick; native port `9000`):
+//! `ClickHouse` shard bulk copy to a peer (rebalance Moving tick; native port `9000`):
 //!
 //! ```no_run
 //! use parton::{TemplatedExecId, TemplatedExecParams, TemplatedExecSpec};

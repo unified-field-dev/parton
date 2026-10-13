@@ -2,12 +2,12 @@
 
 use super::super::types::{TemplatedExecId, ValidatedTemplatedExecParams};
 
-/// Fixed lab namespace.collection for [`TemplatedExecId::MongoMoveChunk`].
+/// Fixed namespace.collection for [`TemplatedExecId::MongoMoveChunk`].
 pub(crate) const LAB_MOVE_CHUNK_NS: &str = "nucleus_rebalance.nucleus_rebalance_lab";
 
 /// Build argv for Mongo config RS / shardsvr / addShard / moveChunk (discrete tokens only).
 ///
-/// Lab control plane uses `mongosh --eval` with fixed scripts from validated host/port/RS
+/// The control plane uses `mongosh --eval` with fixed scripts from validated host/port/RS
 /// name. No free-text shell. Collection name for moveChunk is a fixed literal.
 #[must_use]
 pub(crate) fn mongodb_sharded_templated_exec_argv(

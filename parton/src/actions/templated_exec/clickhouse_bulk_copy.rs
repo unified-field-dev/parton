@@ -1,10 +1,10 @@
-//! Multi-step lab `ClickHouse` shard bulk copy (fixed `MergeTree` → peer via `remote()`).
+//! Multi-step `ClickHouse` shard bulk copy (fixed `MergeTree` → peer via `remote()`).
 
 use super::super::types::{TemplatedExecId, ValidatedTemplatedExecParams};
 use super::registry::classify_promote_outcome;
 use super::runner::{CommandOutput, DockerCliRunner};
 
-/// Fixed lab table copied by [`TemplatedExecId::ChShardBulkCopy`] (not caller-controlled).
+/// Fixed table copied by [`TemplatedExecId::ChShardBulkCopy`] (not caller-controlled).
 pub(crate) const LAB_REBALANCE_TABLE: &str = "nucleus_rebalance_lab";
 
 const CREATE_TABLE_SQL: &str = "CREATE TABLE IF NOT EXISTS default.nucleus_rebalance_lab (id String, payload String) ENGINE = MergeTree ORDER BY id";
@@ -52,7 +52,7 @@ pub(crate) fn clickhouse_peer_argv(
     ]
 }
 
-/// Push local lab table rows to dest via `INSERT INTO FUNCTION remote(...)`.
+/// Push local table rows to dest via `INSERT INTO FUNCTION remote(...)`.
 #[must_use]
 pub(crate) fn clickhouse_remote_insert_argv(
     container_ref: &str,

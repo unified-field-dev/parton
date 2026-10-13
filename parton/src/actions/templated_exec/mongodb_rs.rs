@@ -4,7 +4,7 @@ use super::super::types::{TemplatedExecId, ValidatedTemplatedExecParams};
 
 /// Build argv for Mongo RS initiate / add / stepDown (discrete tokens only).
 ///
-/// Lab control plane uses `mongosh --eval` with fixed scripts built from
+/// The control plane uses `mongosh --eval` with fixed scripts built from
 /// validated host/port/replica-set name (`user` on initiate). No free-text shell.
 #[must_use]
 pub(crate) fn mongodb_templated_exec_argv(

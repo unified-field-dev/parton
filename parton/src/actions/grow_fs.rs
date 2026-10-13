@@ -2,7 +2,7 @@
 //!
 //! Validates mount paths, resolves the block device and filesystem type for a mount point via
 //! `findmnt`, then runs optional `growpart` plus `resize2fs` or `xfs_growfs`. Cloud volume resize
-//! and capacity observation (heartbeat `statfs` / mount projection via Pion) happen outside this
+//! and capacity observation (heartbeat `statfs` / mount projection by the control plane) happen outside this
 //! module.
 //!
 //! Unit and scripted happy and sad paths are covered. End-to-end host `growpart` after a cloud
@@ -79,7 +79,7 @@ pub(crate) struct ProcessGrowFsRunner;
 impl GrowFsCommandRunner for ProcessGrowFsRunner {
     fn run(&self, program: &str, args: &[&str]) -> anyhow::Result<CommandOutput> {
         // growpart / resize2fs / xfs_growfs need root; AgentHost systemd runs as root,
-        // but lab/user installs may not — prefer passwordless sudo over failing open().
+        // but user installs may not — prefer passwordless sudo over failing open().
         let needs_priv = matches!(program, "growpart" | "resize2fs" | "xfs_growfs");
         let use_sudo = needs_priv && !running_as_root();
         let output = if use_sudo {

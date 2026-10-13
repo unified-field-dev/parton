@@ -128,7 +128,7 @@ fn collect_container_status_report_returns_empty_on_runner_error() {
     assert_eq!(report.summary.running, 0);
 }
 
-/// F11: `suppress_enrollment_token` must omit the token even when the env var is set, so the
+/// `suppress_enrollment_token` must omit the token even when the env var is set, so the
 /// agent can stop resending it after a heartbeat has been acknowledged.
 #[test]
 #[serial_test::serial]

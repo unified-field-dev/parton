@@ -67,7 +67,7 @@ pub enum AgentDirective {
     },
 }
 
-/// Canonical heartbeat payload ingested by the Pion control plane.
+/// Canonical heartbeat payload ingested by the control plane.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeHeartbeatReport {
     /// Stable node identifier.
@@ -83,10 +83,10 @@ pub struct NodeHeartbeatReport {
     /// One-time host enrollment token (`ghe.<id>.<secret>`), when joining a strict control plane.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub enrollment_token: Option<String>,
-    /// When the agent has applied a re-enroll directive, reports the new wire token so the CP can mark the directive acknowledged.
+    /// When the agent has applied a re-enroll directive, reports the new wire token so the control plane can mark the directive acknowledged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub applied_directive_token: Option<String>,
-    /// Agent-reported failure applying a directive (fallback heartbeat to old CP during grace window).
+    /// Agent-reported failure applying a directive (fallback heartbeat to old control plane during grace window).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub apply_failed: Option<String>,
 }
@@ -103,7 +103,7 @@ pub struct HeartbeatReportOverrides {
     ///
     /// The enrollment token only needs to reach the control plane once (to authorize the first
     /// heartbeat for a not-yet-known node); resending a long-lived token on every subsequent
-    /// heartbeat needlessly repeats sensitive material over the wire and into CP-side telemetry
+    /// heartbeat needlessly repeats sensitive material over the wire and into control plane-side telemetry
     /// persistence. Callers should set this once a heartbeat has been acknowledged.
     pub suppress_enrollment_token: bool,
 }

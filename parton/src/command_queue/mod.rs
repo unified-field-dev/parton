@@ -10,7 +10,7 @@
 //! # `payload_json` shapes by `action_kind`
 //!
 //! See [`ClaimedNodeActionBody::payload_json`]. `deploy_handoff` / `teardown_handoff`
-//! wire fields must stay in sync with Pion's
+//! wire fields must stay in sync with the control plane's
 //! `DeployHandoffActionRequest` / `TeardownHandoffActionRequest`.
 //!
 //! # Module layout

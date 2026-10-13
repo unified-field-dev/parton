@@ -60,7 +60,8 @@ pub struct ContainerStatus {
     pub container_id: String,
     /// Primary container name (leading `/` stripped).
     pub container_name: String,
-    /// Instance id from the optional `gluon.instance_id` container label, when present.
+    /// Instance id read from the optional `gluon.instance_id` container label, when whatever
+    /// deployed the container set it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instance_id: Option<String>,
     /// Normalized lifecycle state.

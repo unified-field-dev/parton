@@ -18,8 +18,8 @@
 //! # Security (implemented, default deny)
 //!
 //! Production agents should leave host networking/mounts denied and digest pinning
-//! enabled. Cosign is opt-in via `PARTON_COSIGN_MODE`. Operator checklist:
-//! crate root `SECURITY.md` (vulnerability reporting).
+//! enabled. Cosign is opt-in via `PARTON_COSIGN_MODE`. Vulnerability
+//! reporting: [`SECURITY.md`](https://github.com/unified-field-dev/parton/blob/main/SECURITY.md).
 //!
 //! | Variable | Effect when set truthy / configured |
 //! |----------|-------------------------------------|

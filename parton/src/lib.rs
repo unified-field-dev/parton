@@ -264,7 +264,8 @@
 //! POST it, apply directives, then claim/run queued actions (claim/result live in `main`).
 //!
 //! Prerequisites: `PARTON_NODE_ID` required; optional `PARTON_HEARTBEAT_URL`,
-//! `PARTON_CELL_ID`, `PARTON_SHARED_TOKEN`, lease / grace env vars (see crate README).
+//! `PARTON_CELL_ID`, `PARTON_SHARED_TOKEN`, lease / grace env vars (see the
+//! [crate README](https://github.com/unified-field-dev/parton/blob/main/parton/README.md)).
 //!
 //! 1. Load [`agent_runtime::AgentRuntimeConfig`] from the environment.
 //! 2. Call [`agent_runtime::run_heartbeat_step`] each tick.
@@ -308,7 +309,7 @@
 //!
 //! Deploy policy defaults to deny host networking/mounts and require digest-pinned
 //! images; shared-token / SPIFFE presentation and optional cosign verify are
-//! implemented. Vulnerability reporting: repository root `SECURITY.md`.
+//! implemented. Vulnerability reporting: [`SECURITY.md`](https://github.com/unified-field-dev/parton/blob/main/SECURITY.md).
 
 mod actions;
 pub mod agent_metrics;

@@ -1,4 +1,4 @@
-//! Apply signed CP directives (re-enroll / revoke) after a successful heartbeat response.
+//! Apply signed control plane directives (re-enroll / revoke) after a successful heartbeat response.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -46,11 +46,11 @@ pub enum DirectiveError {
 /// Result of applying a batch of signed directives to the agent's local state.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DirectiveApplyOutcome {
-    /// Base64(STANDARD) of the decrypted wire token; send as `applied_directive_token` on the next heartbeat to the new CP.
+    /// Base64(STANDARD) of the decrypted wire token; send as `applied_directive_token` on the next heartbeat to the new control plane.
     pub next_applied_directive_token: Option<String>,
     /// When true, the process should exit with code 1 (revoked agent).
     pub revoke_exit: bool,
-    /// Prior CP heartbeat URL captured before `parton.env` rewrite (grace-window fallback target).
+    /// Prior control plane heartbeat URL captured before `parton.env` rewrite (grace-window fallback target).
     pub prev_endpoint: Option<String>,
     /// Prior `PARTON_ENROLLMENT_TOKEN` / shared token snapshot before rewrite.
     pub prev_token: Option<String>,

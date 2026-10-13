@@ -1023,7 +1023,7 @@ fn redact_env_var_values_masks_values_keeps_names() {
     );
 }
 
-/// F11: deploy result payloads must never echo `env_vars` values back to the control plane.
+/// Deploy result payloads must never echo `env_vars` values back to the control plane.
 #[test]
 fn general_action_payload_for_deploy_redacts_env_var_values() {
     let mut request = deploy_request(

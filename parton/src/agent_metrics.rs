@@ -49,7 +49,8 @@ fn duration_ms(elapsed: Duration) -> f64 {
 }
 
 /// Installs a Prometheus scrape HTTP listener when `PARTON_METRICS_BIND` is set; a no-op
-/// otherwise (default OFF — see the crate README).
+/// otherwise (default off; see the
+/// [crate README](https://github.com/unified-field-dev/parton/blob/main/parton/README.md)).
 ///
 /// Must be called from within a Tokio runtime (the exporter's HTTP server is spawned onto it).
 ///

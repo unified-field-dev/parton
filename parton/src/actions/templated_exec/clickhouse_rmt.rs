@@ -4,10 +4,10 @@ use super::super::types::{TemplatedExecId, ValidatedTemplatedExecParams};
 use super::registry::classify_promote_outcome;
 use super::runner::{CommandOutput, DockerCliRunner};
 
-/// Fixed lab local table for Distributed fan-out proofs.
+/// Fixed local table used to verify Distributed fan-out.
 pub(crate) const LAB_LOCAL_TABLE: &str = "nucleus_local_lab";
 
-/// Fixed lab Distributed table wrapping [`LAB_LOCAL_TABLE`].
+/// Fixed Distributed table wrapping [`LAB_LOCAL_TABLE`].
 pub(crate) const LAB_DISTRIBUTED_TABLE: &str = "nucleus_distributed_lab";
 
 const REMOTE_SERVERS_CONFIG_PATH: &str =
@@ -15,7 +15,7 @@ const REMOTE_SERVERS_CONFIG_PATH: &str =
 
 /// Build argv for `ClickHouse` RMT / Distributed templates (discrete tokens only).
 ///
-/// Lab control-plane readiness uses `clickhouse-client` queries. The control plane /
+/// Readiness checks use `clickhouse-client` queries. The control plane /
 /// orchestrator validates Keeper/peer/topology params; the container query proves the
 /// agent path without free-text shell.
 #[must_use]
@@ -86,7 +86,7 @@ pub(crate) fn run_ch_remote_servers_apply(
     Ok((ok, msg, reload))
 }
 
-/// Create local `MergeTree` lab table, then Distributed wrapper.
+/// Create local `MergeTree` table, then Distributed wrapper.
 pub(crate) fn run_ch_distributed_ensure(
     container_ref: &str,
     params: &ValidatedTemplatedExecParams,

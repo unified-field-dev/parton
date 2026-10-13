@@ -4,7 +4,7 @@
 //! `keyless`, Parton shells out to `cosign verify` (override binary via `PARTON_COSIGN_BIN`)
 //! and fails closed on non-zero exit. Mode `off` (default) skips signature verification.
 //!
-//! Vulnerability reporting: repository root `SECURITY.md`.
+//! Vulnerability reporting: [`SECURITY.md`](https://github.com/unified-field-dev/parton/blob/main/SECURITY.md).
 
 use std::process::Command;
 

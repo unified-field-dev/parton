@@ -1,4 +1,4 @@
-//! Enrollment sealed-box keys ([`crypto_box`]) and Ed25519 helpers for signed CP directives.
+//! Enrollment sealed-box keys ([`crypto_box`]) and Ed25519 helpers for signed control plane directives.
 //!
 //! - **Enrollment** uses `crypto_box` X25519 sealed boxes (`PublicKey::seal` / [`SecretKey::unseal`]).
 //! - **Directive signatures** use Ed25519 (authority signs; agent verifies with `PARTON_AUTHORITY_VERIFY_KEY`).
@@ -192,7 +192,7 @@ pub fn directive_verifying_key_from_base64(b64: &str) -> Result<VerifyingKey, Id
     VerifyingKey::from_bytes(&arr).map_err(IdentityError::InvalidVerifyingKey)
 }
 
-/// Sign `message` with an Ed25519 signing key (CP authority issuance).
+/// Sign `message` with an Ed25519 signing key (control plane authority issuance).
 ///
 /// Returns the detached signature as base64 STANDARD.
 ///

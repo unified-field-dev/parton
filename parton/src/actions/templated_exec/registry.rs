@@ -10,7 +10,7 @@ pub(crate) const PGDATA: &str = "/var/lib/postgresql/data";
 
 /// Build `docker …` argv segments (without the `docker` binary) for single-step templates.
 ///
-/// `user` is the validated lab DB role for [`TemplatedExecId::PgPromote`] (ignored otherwise).
+/// `user` is the validated database role for [`TemplatedExecId::PgPromote`] (ignored otherwise).
 /// Templates that need validated host/port/node/slots use [`redis_templated_exec_argv`].
 #[must_use]
 pub(crate) fn promote_exec_argv(

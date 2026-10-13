@@ -336,7 +336,7 @@ fn generic_container_action_request(node_id: &str) -> serde_json::Value {
     })
 }
 
-/// F10: `run_generic_container_action` must refuse a payload whose `node_id` does not match
+/// `run_generic_container_action` must refuse a payload whose `node_id` does not match
 /// the executing agent, mirroring the same guard on `deploy_handoff` / `teardown_handoff`.
 #[test]
 fn run_generic_container_action_rejects_node_id_mismatch() {

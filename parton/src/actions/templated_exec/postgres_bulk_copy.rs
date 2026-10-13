@@ -1,4 +1,4 @@
-//! Multi-step lab Postgres shard bulk copy (fixed table → peer).
+//! Multi-step Postgres shard bulk copy (fixed table → peer).
 //!
 //! Order: `CREATE` on the **source** container, `CREATE` on the dest peer,
 //! `pg_dump` (source), then apply the dump on the dest. Creating only on dest
@@ -8,10 +8,10 @@ use super::super::types::{TemplatedExecId, ValidatedTemplatedExecParams};
 use super::registry::classify_promote_outcome;
 use super::runner::{CommandOutput, DockerCliRunner};
 
-/// Fixed lab table copied by [`TemplatedExecId::PgShardBulkCopy`] (not caller-controlled).
+/// Fixed table copied by [`TemplatedExecId::PgShardBulkCopy`] (not caller-controlled).
 pub(crate) const LAB_REBALANCE_TABLE: &str = "nucleus_rebalance_lab";
 
-/// Lab database name inside the Postgres image.
+/// Database name inside the Postgres image.
 pub(crate) const LAB_DB: &str = "nucleus";
 
 const DUMP_PATH: &str = "/tmp/nucleus_rebalance_lab.sql";
@@ -24,7 +24,7 @@ pub(crate) fn run_pg_shard_bulk_copy(
     params: &ValidatedTemplatedExecParams,
     runner: &dyn DockerCliRunner,
 ) -> anyhow::Result<(bool, &'static str, CommandOutput)> {
-    // Source must have the lab table before pg_dump; dest CREATE alone left dump failing.
+    // Source must have the table before pg_dump; dest CREATE alone left dump failing.
     let create_src = runner.run(&psql_local_argv(container_ref, params, CREATE_TABLE_SQL))?;
     if !create_src.status_success {
         return Ok((false, "pg_shard_bulk_copy failed", create_src));

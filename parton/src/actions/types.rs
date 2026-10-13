@@ -34,12 +34,12 @@ pub enum ContainerActionKind {
     /// Grow the filesystem on a host mount after cloud block-volume expand.
     ///
     /// Requires [`ContainerActionRequest::grow_fs`]. Host-native (not Docker); shares the
-    /// deploy capability gate on Pion.
+    /// deploy capability gate on the control plane.
     GrowFs,
     /// Allowlisted in-container engine op (`pg_promote`, standby bootstrap/follow, …).
     ///
     /// Requires [`ContainerActionRequest::templated_exec`]. Fixed argv templates only
-    /// (no free-text shell). Shares the deploy capability gate on Pion.
+    /// (no free-text shell). Shares the deploy capability gate on the control plane.
     TemplatedExec,
 }
 
@@ -85,7 +85,7 @@ pub enum TemplatedExecId {
     PgStandbyFollow,
     /// `SELECT pg_promote();` via `psql` (former `EnginePromote` / Postgres).
     ///
-    /// Lab DB `user` defaults to `nucleus` when empty (matches lab `POSTGRES_USER`).
+    /// Database `user` defaults to `nucleus` when empty (the Postgres image's `POSTGRES_USER` is expected to match).
     PgPromote,
     /// `REPLICAOF NO ONE` via `redis-cli` (former `EnginePromote` / Redis).
     RedisReplicaofNoOne,
@@ -107,39 +107,39 @@ pub enum TemplatedExecId {
     RedisClusterSetslotMigrating,
     /// `CLUSTER GETKEYSINSLOT` then `MIGRATE` keys to peer (one slot; peer host/port required).
     RedisClusterMigrateSlotKeys,
-    /// Lab shard bulk copy: dump fixed table `nucleus_rebalance_lab` on source → apply on dest peer.
+    /// Shard bulk copy: dump fixed table `nucleus_rebalance_lab` on source → apply on dest peer.
     ///
-    /// Requires peer `primary_host` / `primary_port` (destination) and lab DB `user` (default `nucleus`).
+    /// Requires peer `primary_host` / `primary_port` (destination) and database `user` (default `nucleus`).
     PgShardBulkCopy,
     /// `ClickHouse` RMT replica readiness / join check (`clickhouse-client` SELECT 1).
     ///
-    /// Requires Keeper/peer `primary_host` / `primary_port` (lab default port `9181`).
+    /// Requires Keeper/peer `primary_host` / `primary_port` (default port `9181`).
     ChRmtBootstrap,
     /// `ClickHouse` demoted-follow / rejoin heal (`clickhouse-client` SELECT 1).
     ///
-    /// Requires new primary `primary_host` / `primary_port` (lab default port `8123`).
+    /// Requires new primary `primary_host` / `primary_port` (default port `8123`).
     ChRmtFollow,
     /// `ClickHouse` promote readiness (`clickhouse-client` SELECT 1; the control plane / orchestrator owns role swap).
     ChPromote,
-    /// Apply `remote_servers` topology (lab: `SYSTEM RELOAD CONFIG` after validated peers).
+    /// Apply `remote_servers` topology (runs `SYSTEM RELOAD CONFIG` after validated peers).
     ///
     /// Requires non-empty `topology_peers` (`shard@host:port` comma-separated) and cluster name in `user`.
     ChRemoteServersApply,
-    /// Apply Keeper quorum peer list (lab: readiness `SELECT 1` with validated peers).
+    /// Apply Keeper quorum peer list (readiness check is `SELECT 1` with validated peers).
     ///
     /// Requires non-empty `topology_peers` (`host:port` comma-separated).
     ChKeeperQuorumApply,
-    /// Lab Distributed table ensure (`CREATE TABLE IF NOT EXISTS … ENGINE = Distributed`).
+    /// Distributed table ensure (`CREATE TABLE IF NOT EXISTS … ENGINE = Distributed`).
     ///
-    /// Requires cluster name in `user` (lab charset).
+    /// Requires cluster name in `user` (restricted charset).
     ChDistributedEnsure,
-    /// Lab shard bulk copy: ensure fixed `MergeTree` `default.nucleus_rebalance_lab` on dest
+    /// Shard bulk copy: ensure fixed `MergeTree` `default.nucleus_rebalance_lab` on dest
     /// peer, then `INSERT INTO FUNCTION remote(…) SELECT *` from the source container.
     ///
     /// Requires peer `primary_host` / `primary_port` (destination native protocol; default `9000`).
-    /// Lab no-auth (default user). Multi-step; fail-closed.
+    /// No-auth (default user). Multi-step; fail-closed.
     ChShardBulkCopy,
-    /// `MongoDB` `rs.initiate` via `mongosh --eval` (lab no-auth).
+    /// `MongoDB` `rs.initiate` via `mongosh --eval` (no-auth).
     ///
     /// Requires this member's advertise `primary_host` / `primary_port` (default `27017`).
     /// `user` carries the replica-set name (default `rs0` when empty; same charset as PG user).
@@ -150,7 +150,7 @@ pub enum TemplatedExecId {
     MongoRsAdd,
     /// `MongoDB` `rs.stepDown()` via `mongosh --eval` (promote path; the control plane / orchestrator owns role swap).
     MongoRsStepDown,
-    /// Config-server replica-set `rs.initiate` with `configsvr: true` (lab no-auth).
+    /// Config-server replica-set `rs.initiate` with `configsvr: true` (no-auth).
     ///
     /// Requires advertise `primary_host` / `primary_port` (default `27017`).
     /// `user` carries the config RS name (default `cfg0` when empty).
@@ -159,16 +159,16 @@ pub enum TemplatedExecId {
     ///
     /// Requires peer `primary_host` / `primary_port` (default `27017`).
     MongoConfigRsAdd,
-    /// Lab readiness: confirm this `mongod` was started with `--shardsvr` (after orchestrator recreate).
+    /// Readiness: confirm this `mongod` was started with `--shardsvr` (after orchestrator recreate).
     MongoShardsvrEnable,
-    /// `sh.addShard("rsName/host:port")` via `mongosh` on a `mongos` (lab no-auth).
+    /// `sh.addShard("rsName/host:port")` via `mongosh` on a `mongos` (no-auth).
     ///
     /// Requires shard seed `primary_host` / `primary_port` and RS name in `user`.
     MongoAddShard,
-    /// Lab `sh.moveChunk` for fixed `nucleus_rebalance.nucleus_rebalance_lab` (shard key `sk`).
+    /// `sh.moveChunk` for fixed `nucleus_rebalance.nucleus_rebalance_lab` (shard key `sk`).
     ///
     /// Run on `mongos`. `user` is the target shard name (replica-set name).
-    /// `slot_start` is the lab key value to move (default `0`).
+    /// `slot_start` is the key value to move (default `0`).
     MongoMoveChunk,
 }
 
@@ -231,7 +231,7 @@ impl TemplatedExecId {
         )
     }
 
-    /// Whether `user` carries a Mongo replica-set / shard name (lab charset).
+    /// Whether `user` carries a Mongo replica-set / shard name (restricted charset).
     #[must_use]
     pub fn requires_mongo_rs_name(self) -> bool {
         matches!(
@@ -312,7 +312,7 @@ pub struct TemplatedExecParams {
     /// Primary / peer port (`0` → template default: `5432` PG, `6379` Redis).
     #[serde(default)]
     pub primary_port: u16,
-    /// Replication / DB user (lab default `nucleus` when empty for PG standby / `PgPromote`).
+    /// Replication / DB user (defaults to `nucleus` when empty for PG standby / `PgPromote`).
     #[serde(default)]
     pub user: String,
     /// Redis Cluster node id (required for REPLICATE / MIGRATE).
@@ -417,7 +417,7 @@ impl TemplatedExecParams {
         } else {
             self.primary_port
         };
-        // PG standby / bulk-copy: lab DB user. Mongo initiate: replica-set name in `user`.
+        // PG standby / bulk-copy: database user. Mongo initiate: replica-set name in `user`.
         if matches!(
             template,
             TemplatedExecId::PgStandbyBootstrap
@@ -701,7 +701,7 @@ pub struct ContainerActionRequest {
     pub entrypoint: Option<String>,
     /// Arguments after the image ref (replaces image CMD), e.g. `-c` and a shell script.
     /// Each entry is usually a JSON string. Non-string values (e.g. pre-claim `{"$secret_ref":…}`)
-    /// are rejected at execution: the pion control plane should resolve before Parton runs the command.
+    /// are rejected at execution: the control plane should resolve before Parton runs the command.
     #[serde(default)]
     pub command: Vec<serde_json::Value>,
     /// When set (e.g. `unless-stopped`), passed to `docker run --restart …`.
@@ -735,8 +735,8 @@ pub struct ContainerActionRequest {
     #[serde(default)]
     pub templated_exec: Option<TemplatedExecSpec>,
     /// When set, destructive actions (`Stop`, `Restart`, deploy pre-cleanup) only apply if
-    /// `docker inspect` reports this container id for `container_ref`. Prevents stale
-    /// `gluon-stop:*` / redeploy races from killing a newer container that reused the same name.
+    /// `docker inspect` reports this container id for `container_ref`. Prevents a
+    /// stale stop or redeploy request from killing a newer container that reused the same name.
     #[serde(default)]
     pub expected_container_id: Option<String>,
 }
